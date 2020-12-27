@@ -1,12 +1,33 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.net.*;
-import java.util.regex.*;
+import java.io.File;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.net.UnknownHostException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
-import java.sql.*;
 import java.util.Properties;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+//import org.apache.lucene.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+//import org.apache.lucene.document.IntField;
+import org.apache.lucene.document.TextField;
+import org.apache.lucene.document.StringField;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.store.Directory;
+import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.RAMDirectory;
+
 
 public class Crawler {
     private static final String CONNECTION = "jdbc:mysql://localhost:3306/etc?autoReconnect=true&useSSL=false";
@@ -93,6 +114,11 @@ public class Crawler {
                 durationList.add(m4.group());
             } 
 
+            Directory directory = FSDirectory.open(new File("./index/").toPath());
+            Analyzer analyzer=new StandardAnalyzer();  
+            IndexWriterConfig iwc=new IndexWriterConfig(analyzer); 
+            IndexWriter writer= new IndexWriter(directory, iwc);
+
             //显示结果并写入数据库
             for (int i=0; i<urlList.size(); i++){
                 System.out.println(urlList.get(i));
@@ -103,7 +129,15 @@ public class Crawler {
                 
                 String sql = "insert into `bilibili`(url,title,description,duration)values('"+urlList.get(i).substring(10,urlList.get(i).length()-1) +"','"+ titleList.get(i).substring(9,titleList.get(i).length()-2)+"','"+descriptionList.get(i).substring(15,descriptionList.get(i).length()-1)+"','"+durationList.get(i).substring(12,durationList.get(i).length()-1)+"')";
                 statement.executeUpdate(sql);
+
+                Document doc = new Document();
+                doc.add(new StringField("id",urlList.get(i), Field.Store.YES));
+                doc.add(new StringField("author", durationList.get(i), Field.Store.YES));
+                doc.add(new TextField("title", titleList.get(i), Field.Store.YES));
+                doc.add(new TextField("description", durationList.get(i), Field.Store.YES));
+                writer.addDocument(doc);
             }
+            writer.close(); 
             statement.close();
             c.close();
         } catch (Exception e) {
