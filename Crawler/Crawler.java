@@ -1,5 +1,6 @@
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.io.File;
 import java.net.HttpURLConnection;
 import java.net.URL;
@@ -14,12 +15,10 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import org.apache.lucene.*;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.standard.StandardAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-//import org.apache.lucene.document.IntField;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
@@ -34,6 +33,8 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+
+import org.wltea.analyzer.lucene.IKAnalyzer;
 
 
 public class Crawler {
@@ -122,7 +123,8 @@ public class Crawler {
             } 
 
             Directory directory = FSDirectory.open(new File("./index/").toPath());
-            Analyzer analyzer=new StandardAnalyzer();  
+            //Analyzer analyzer=new StandardAnalyzer();  
+            Analyzer analyzer=new IKAnalyzer(true);
             IndexWriterConfig iwc=new IndexWriterConfig(analyzer); 
             IndexWriter writer= new IndexWriter(directory, iwc);
 
@@ -138,10 +140,10 @@ public class Crawler {
                 statement.executeUpdate(sql);
 
                 Document doc = new Document();
-                doc.add(new StringField("id",urlList.get(i), Field.Store.YES));
-                doc.add(new StringField("author", durationList.get(i), Field.Store.YES));
-                doc.add(new TextField("title", titleList.get(i), Field.Store.YES));
-                doc.add(new TextField("description", durationList.get(i), Field.Store.YES));
+                doc.add(new StringField("url",urlList.get(i).substring(10,urlList.get(i).length()-1), Field.Store.YES));
+                doc.add(new TextField("title", titleList.get(i).substring(9,titleList.get(i).length()-2), Field.Store.YES));
+                doc.add(new TextField("description", descriptionList.get(i).substring(15,descriptionList.get(i).length()-1), Field.Store.YES));
+                doc.add(new StringField("duration", durationList.get(i).substring(12,durationList.get(i).length()-1), Field.Store.YES));
                 writer.addDocument(doc);
             }
             writer.close(); 
@@ -165,9 +167,11 @@ public class Crawler {
             for (int i = 0; i < rs.scoreDocs.length; i++) {
                 // rs.scoreDocs[i].doc 是获取索引中的标志位id, 从0开始记录
                 Document firstHit = searcher.doc(rs.scoreDocs[i].doc);
-                System.out.println("author:" + firstHit.getField("author").stringValue());
+                System.out.println("url:" + firstHit.getField("url").stringValue());
                 System.out.println("title:" + firstHit.getField("title").stringValue());
                 System.out.println("description:" + firstHit.getField("description").stringValue());
+                System.out.println("duration:" + firstHit.getField("duration").stringValue());
+                System.out.println("");
             }
             directory.close();
             System.out.println("*****************检索结束**********************");
@@ -176,14 +180,44 @@ public class Crawler {
         }
     }
 
+    //TODO
+    public static void booleanQuery(String str) {
+        try{
+            Directory directory = FSDirectory.open(new File("./index/").toPath());
+            DirectoryReader reader = DirectoryReader.open(directory);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Query query = new TermQuery(new Term("title", str));
+            long startTime = System.currentTimeMillis();
+            TopDocs rs = searcher.search(query, 10);
+            long endTime = System.currentTimeMillis();
+            System.out.println("总共花费" + (endTime - startTime) + "毫秒，检索到" + rs.totalHits + "条记录。");
+            for (int i = 0; i < rs.scoreDocs.length; i++) {
+                // rs.scoreDocs[i].doc 是获取索引中的标志位id, 从0开始记录
+                Document firstHit = searcher.doc(rs.scoreDocs[i].doc);
+                System.out.println("url:" + firstHit.getField("url").stringValue());
+                System.out.println("title:" + firstHit.getField("title").stringValue());
+                System.out.println("description:" + firstHit.getField("description").stringValue());
+                System.out.println("duration:" + firstHit.getField("duration").stringValue());
+                System.out.println("");
+            }
+            directory.close();
+            System.out.println("*****************检索结束**********************");
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
     public static void main(String[] args) throws UnknownHostException {
         Scanner input = new Scanner(System.in);
-        System.out.print("请输入查询的值：");
+        /*System.out.print("请输入查询的值：");
         String what = input.next();
         System.out.print("请输入查询页数：");
         String n = input.next();
-        getBilibili(what,n);
-        termQuery("2019");
+        getBilibili(what,n);*/
+        System.out.print("请输入搜索的值：");
+        String term = input.next();
+        termQuery(term);
         input.close();
     }
 }
