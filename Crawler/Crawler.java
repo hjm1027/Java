@@ -25,8 +25,15 @@ import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
+
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
 
 
 public class Crawler {
@@ -121,11 +128,11 @@ public class Crawler {
 
             //显示结果并写入数据库
             for (int i=0; i<urlList.size(); i++){
-                System.out.println(urlList.get(i));
-                System.out.println(titleList.get(i));
-                System.out.println(descriptionList.get(i));
-                System.out.println(durationList.get(i));
-                System.out.println();
+                //System.out.println(urlList.get(i));
+                //System.out.println(titleList.get(i));
+                //System.out.println(descriptionList.get(i));
+                //System.out.println(durationList.get(i));
+                //System.out.println();
                 
                 String sql = "insert into `bilibili`(url,title,description,duration)values('"+urlList.get(i).substring(10,urlList.get(i).length()-1) +"','"+ titleList.get(i).substring(9,titleList.get(i).length()-2)+"','"+descriptionList.get(i).substring(15,descriptionList.get(i).length()-1)+"','"+durationList.get(i).substring(12,durationList.get(i).length()-1)+"')";
                 statement.executeUpdate(sql);
@@ -145,6 +152,30 @@ public class Crawler {
         }
     }
 
+    public static void termQuery(String str) {
+        try{
+            Directory directory = FSDirectory.open(new File("./index/").toPath());
+            DirectoryReader reader = DirectoryReader.open(directory);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            Query query = new TermQuery(new Term("title", str));
+            long startTime = System.currentTimeMillis();
+            TopDocs rs = searcher.search(query, 10);
+            long endTime = System.currentTimeMillis();
+            System.out.println("总共花费" + (endTime - startTime) + "毫秒，检索到" + rs.totalHits + "条记录。");
+            for (int i = 0; i < rs.scoreDocs.length; i++) {
+                // rs.scoreDocs[i].doc 是获取索引中的标志位id, 从0开始记录
+                Document firstHit = searcher.doc(rs.scoreDocs[i].doc);
+                System.out.println("author:" + firstHit.getField("author").stringValue());
+                System.out.println("title:" + firstHit.getField("title").stringValue());
+                System.out.println("description:" + firstHit.getField("description").stringValue());
+            }
+            directory.close();
+            System.out.println("*****************检索结束**********************");
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
     public static void main(String[] args) throws UnknownHostException {
         Scanner input = new Scanner(System.in);
         System.out.print("请输入查询的值：");
@@ -152,6 +183,7 @@ public class Crawler {
         System.out.print("请输入查询页数：");
         String n = input.next();
         getBilibili(what,n);
+        termQuery("2019");
         input.close();
     }
 }
