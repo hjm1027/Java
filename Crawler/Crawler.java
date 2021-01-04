@@ -33,6 +33,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 
 import org.wltea.analyzer.lucene.IKAnalyzer;
@@ -241,6 +242,37 @@ public class Crawler {
         }
     }
 
+    public static void fuzzyQuery() {
+        try{
+            System.out.println("你选择了FuzzyQuery");
+            Scanner input = new Scanner(System.in);
+            System.out.print("请输入查询的值：");
+            String word = input.next();
+            input.close();
+            
+            Directory directory = FSDirectory.open(new File("./index/").toPath());
+            DirectoryReader reader = DirectoryReader.open(directory);
+            IndexSearcher searcher = new IndexSearcher(reader);
+            FuzzyQuery query = new FuzzyQuery(new Term("title", word));
+            long startTime = System.currentTimeMillis();
+            TopDocs rs = searcher.search(query, 10);
+            long endTime = System.currentTimeMillis();
+            System.out.println("总共花费" + (endTime - startTime) + "毫秒，检索到" + rs.totalHits + "条记录。");
+            for (int i = 0; i < rs.scoreDocs.length; i++) {
+                // rs.scoreDocs[i].doc 是获取索引中的标志位id, 从0开始记录
+                Document firstHit = searcher.doc(rs.scoreDocs[i].doc);
+                System.out.println("url:" + firstHit.getField("url").stringValue());
+                System.out.println("title:" + firstHit.getField("title").stringValue());
+                System.out.println("description:" + firstHit.getField("description").stringValue());
+                System.out.println("duration:" + firstHit.getField("duration").stringValue());
+                System.out.println("");
+            }
+            directory.close();
+            System.out.println("*****************检索结束**********************");
+        }catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
     public static void main(String[] args) throws UnknownHostException {
         Scanner input = new Scanner(System.in);
@@ -255,6 +287,8 @@ public class Crawler {
         //termQuery(term);
         //input.close();
 
-        booleanQuery();
+        //booleanQuery();
+
+        fuzzyQuery();
     }
 }
