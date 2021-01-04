@@ -27,12 +27,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
-
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BooleanClause.Occur;
 
 import org.wltea.analyzer.lucene.IKAnalyzer;
 
@@ -156,6 +157,7 @@ public class Crawler {
 
     public static void termQuery(String str) {
         try{
+            System.out.println("你选择了TermQuery");
             Directory directory = FSDirectory.open(new File("./index/").toPath());
             DirectoryReader reader = DirectoryReader.open(directory);
             IndexSearcher searcher = new IndexSearcher(reader);
@@ -180,16 +182,48 @@ public class Crawler {
         }
     }
 
-    //TODO
-    public static void booleanQuery(String str) {
+    public static void booleanQuery() {
         try{
+            //自定搜索条件
+            System.out.println("你选择了BooleanQuery");
+            System.out.println("请输入两个查询字符串和他们对应的条件（1：必须满足，2：可以满足，3：必须不满足）");
+            Scanner input = new Scanner(System.in);
+            String str1 = input.next();
+            int method1=input.nextInt();
+            String str2 = input.next();
+            int method2=input.nextInt();
+
             Directory directory = FSDirectory.open(new File("./index/").toPath());
             DirectoryReader reader = DirectoryReader.open(directory);
             IndexSearcher searcher = new IndexSearcher(reader);
-            Query query = new TermQuery(new Term("title", str));
+
+            //初始化BooleanQuery
+            //BooleanQuery query = new BooleanQuery();
+            Query query1 = new TermQuery(new Term("title", str1));
+            Query query2 = new TermQuery(new Term("title", str2));
+            Occur x1 = Occur.MUST;
+            Occur x2 = Occur.MUST;
+            if (method1 == 2){  
+                x1 = Occur.SHOULD; 
+            }
+            if (method1 == 3){  
+                x1 = Occur.MUST_NOT;  
+            }
+            if (method2 == 2){  
+                x2 = Occur.SHOULD; 
+            }
+            if (method2 == 3){ 
+                 x2 = Occur.MUST_NOT;
+            }
+
+            BooleanQuery query = new BooleanQuery.Builder()
+                .add(query1, x1)
+                .add(query2, x2)
+                .build();
             long startTime = System.currentTimeMillis();
             TopDocs rs = searcher.search(query, 10);
             long endTime = System.currentTimeMillis();
+
             System.out.println("总共花费" + (endTime - startTime) + "毫秒，检索到" + rs.totalHits + "条记录。");
             for (int i = 0; i < rs.scoreDocs.length; i++) {
                 // rs.scoreDocs[i].doc 是获取索引中的标志位id, 从0开始记录
@@ -215,9 +249,12 @@ public class Crawler {
         System.out.print("请输入查询页数：");
         String n = input.next();
         getBilibili(what,n);*/
-        System.out.print("请输入搜索的值：");
-        String term = input.next();
-        termQuery(term);
-        input.close();
+
+        //System.out.print("请输入搜索的值：");
+        //String term = input.next();
+        //termQuery(term);
+        //input.close();
+
+        booleanQuery();
     }
 }
