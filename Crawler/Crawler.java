@@ -156,9 +156,14 @@ public class Crawler {
         }
     }
 
-    public static void termQuery(String str) {
+    public static void termQuery() {
         try{
             System.out.println("你选择了TermQuery");
+            System.out.print("请输入搜索的值：");
+            Scanner input = new Scanner(System.in);
+            String str = input.next();
+            input.close();
+
             Directory directory = FSDirectory.open(new File("./index/").toPath());
             DirectoryReader reader = DirectoryReader.open(directory);
             IndexSearcher searcher = new IndexSearcher(reader);
@@ -193,6 +198,7 @@ public class Crawler {
             int method1=input.nextInt();
             String str2 = input.next();
             int method2=input.nextInt();
+            input.close();
 
             Directory directory = FSDirectory.open(new File("./index/").toPath());
             DirectoryReader reader = DirectoryReader.open(directory);
@@ -275,20 +281,23 @@ public class Crawler {
     }
 
     public static void main(String[] args) throws UnknownHostException {
-        Scanner input = new Scanner(System.in);
-        /*System.out.print("请输入查询的值：");
+        /*Scanner input = new Scanner(System.in);
+        System.out.print("请输入查询的值：");
         String what = input.next();
         System.out.print("请输入查询页数：");
         String n = input.next();
         getBilibili(what,n);*/
 
-        //System.out.print("请输入搜索的值：");
-        //String term = input.next();
-        //termQuery(term);
-        //input.close();
-
-        //booleanQuery();
-
-        fuzzyQuery();
+        System.out.println("请选择查询方式，TeamQuery选1，BooleanQuery选2，FuzzyQuery选3:");
+        Scanner input = new Scanner(System.in);
+        int method=input.nextInt();
+        if (method == 1){
+            termQuery();
+        }else if (method == 2){
+            booleanQuery();
+        }else if (method == 3){
+            fuzzyQuery();
+        }
+        input.close();
     }
 }
